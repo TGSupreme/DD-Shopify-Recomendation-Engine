@@ -6,5 +6,5 @@ numpy
 langchain
 langchain-openai
 langchain-google-genai
-pinecone-client
+pinecone
 python-dotenv

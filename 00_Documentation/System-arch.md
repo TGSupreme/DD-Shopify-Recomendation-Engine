@@ -10,7 +10,7 @@ A high-performance, **stateless** recommendation service built with **FastAPI**.
 *   **Vector Database:** Pinecone
 *   **AI Orchestration:** LangChain (for pluggable embedding models)
 *   **Mathematical Operations:** NumPy (for high-speed vector weighted averaging)
-*   **Embedding Models:** OpenAI (`text-embedding-3-small`) and Google Gemini (`embedding-001`)
+*   **Embedding Models:** OpenAI (`text-embedding-3-small` - 1536 dims) and Google Gemini (`gemini-embedding-001` - 3072 dims)
 *   **External Integration:** Communicates with an Express.js server (primary data source)
 
 ---

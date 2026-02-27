@@ -8,7 +8,7 @@ class GeminiProvider(BaseEmbeddingProvider):
     def __init__(self):
         self.client = GoogleGenerativeAIEmbeddings(
             google_api_key=settings.GOOGLE_API_KEY,
-            model="models/embedding-001"
+            model="models/gemini-embedding-001"
         )
 
     async def embed_query(self, text: str) -> np.ndarray:
