@@ -19,40 +19,41 @@ A high-performance, stateless recommendation service built with FastAPI, Pinecon
     - `history.py`: User behavior (Purchased, Cart, Viewed).
     - `response.py`: Standardized API formats for recommendations and sync status.
 
-### 3. Service Interfaces & Wiring (Skeleton Phase)
-- [x] Defined `BaseEmbeddingProvider` (ABC) in `app/services/embedding/base.py`.
-- [x] Defined `RecommenderStrategy` (ABC) in `app/services/recommender/base.py`.
-- [x] Created skeleton endpoints in `app/api/v1/` for all required routes.
-- [x] Implemented utility skeletons:
+### 3. Logic & Service Implementation
+- [x] Implemented `BaseEmbeddingProvider` (ABC) and concrete `OpenAIProvider` / `GeminiProvider`.
+- [x] Implemented `EmbeddingFactory` for dynamic model switching.
+- [x] Implemented `VectorStoreClient` for Pinecone CRUD and similarity searches.
+- [x] Implemented `ProfileProcessor` for User Interest Vector calculation using NumPy.
+- [x] Implemented `UserRecommender` (Personalization strategy).
+- [x] Implemented `ItemRecommender` (Similarity strategy).
+- [x] Implemented utility functions:
     - `app/utils/formatter.py`: Product context string construction.
     - `app/utils/math_ops.py`: NumPy-based normalization and weighted averaging.
-- [x] Created `ProfileProcessor` skeleton in `app/services/processors/profile.py`.
+
+### 4. API Logic Integration
+- [x] Connected `POST /v1/sync` to the embedding and vector store services.
+- [x] Connected `POST /v1/recommend/user` to the `UserRecommender`.
+- [x] Connected `POST /v1/recommend/similar` to the `ItemRecommender`.
+- [x] Connected `POST /v1/search` to the embedding and vector store services.
+- [x] Implemented `app/api/deps.py` for clean dependency injection of services.
+- [x] Created comprehensive API documentation in `00_Documentation/api_endpoints.md`.
 
 ---
 
-## 🚀 Next Steps (Logic Phase)
+## 🚀 Next Steps (Testing & Refinement Phase)
 
-### 1. Embedding Service Implementation
-- [ ] Implement `EmbeddingFactory` in `app/services/embedding/factory.py`.
-- [ ] Implement OpenAI and Gemini providers using LangChain.
+### 1. Advanced Post-Processing
+- [ ] Implement a post-query Reranker in `app/services/processors/reranker.py` for business logic filtering (e.g., exclude out-of-stock items).
 
-### 2. Vector Store Integration
-- [ ] Implement `PineconeClient` in `app/services/vector_store/client.py` for CRUD operations and similarity searches.
-
-### 3. Logic & Math Implementation
-- [ ] Finalize `ProfileProcessor` logic for calculating the User Interest Vector.
-- [ ] Implement specific recommendation strategies (User-based, Item-based).
-- [ ] Implement a post-query Reranker in `app/services/processors/reranker.py`.
-
-### 4. API Logic Integration
-- [ ] Connect API endpoints to the implemented services.
-- [ ] Implement robust error handling and fallback mechanisms (e.g., "Popular Items" if embeddings fail).
-
-### 5. Testing & Validation
+### 2. Testing & Validation
 - [ ] Create unit tests for vector math and profile processing.
 - [ ] Perform integration tests with Pinecone and Embedding providers.
+- [ ] Implement fallback mechanisms (e.g., "Popular Items" if embeddings or vector store fail).
+
+### 3. Documentation
+- [ ] Update `README.md` with setup instructions and API documentation link.
 
 ---
 
 ## 📌 Current Status
-The project structure and wiring are complete. The application is "plumbed" but contains no business logic. Ready to begin the **Logic Phase**, starting with the **Embedding Service**.
+The **Integration Phase** is complete. All API endpoints are now fully functional and connected to the backend services. The system is ready for testing and further refinement.
