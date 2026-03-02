@@ -1,26 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException
-from app.schemas.product import Product
+from typing import List
+from fastapi import APIRouter, HTTPException
+from app.schemas.product import Product, BatchSyncRequest
 from app.schemas.response import SyncResponse
 from app.utils.formatter import format_product_context
-from app.api.deps import get_embedding_provider, get_vector_store
-from app.services.embedding.base import BaseEmbeddingProvider
-from app.services.vector_store.client import VectorStoreClient
+from app.services.embedding import embed_query, embed_documents
+from app.services.vector_store import upsert_vector, upsert_vectors
 
 router = APIRouter()
 
 @router.post("/", response_model=SyncResponse)
-async def sync_product(
-    product: Product,
-    embedding_provider: BaseEmbeddingProvider = Depends(get_embedding_provider),
-    vector_store: VectorStoreClient = Depends(get_vector_store)
-):
-    """Keep Pinecone in sync with Shopify/MongoDB."""
+async def sync_product(product: Product):
+    """Keep Pinecone in sync with Shopify/MongoDB (Single Product)."""
     try:
         # 1. Format the text for embedding
         content_string = format_product_context(product)
         
         # 2. Generate embedding vector
-        vector = await embedding_provider.embed_query(content_string)
+        vector = await embed_query(content_string)
         
         # 3. Prepare Metadata
         metadata = {
@@ -33,8 +29,48 @@ async def sync_product(
         }
         
         # 4. Upsert to Pinecone
-        await vector_store.upsert_vector(product.id, vector, metadata)
+        await upsert_vector(product.id, vector, metadata, namespace=product.store_id)
         
-        return SyncResponse(message=f"Product {product.id} synced successfully", upserted_count=1)
+        return SyncResponse(message=f"Product {product.id} synced successfully for store {product.store_id}", upserted_count=1)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/bulk", response_model=SyncResponse)
+async def sync_products_bulk(request: BatchSyncRequest):
+    """Perform bulk syncing of multiple products within a single Shopify store namespace."""
+    try:
+        if not request.products:
+            return SyncResponse(message="No products provided", upserted_count=0)
+
+        # 1. Format all product context strings for batch embedding
+        content_strings = [format_product_context(p) for p in request.products]
+        
+        # 2. Generate embeddings in a single batch call (massive performance gain)
+        vectors = await embed_documents(content_strings)
+        
+        # 3. Prepare list of Pinecone-format vectors with metadata
+        vectors_to_upsert = []
+        for i, product in enumerate(request.products):
+            metadata = {
+                "title": product.title,
+                "price": product.price,
+                "category": product.category,
+                "availability": product.availability,
+                "gender": product.gender,
+                **product.extra_metadata
+            }
+            vectors_to_upsert.append({
+                "id": product.id,
+                "values": vectors[i].tolist(),
+                "metadata": metadata
+            } )
+
+        # 4. Upsert everything to Pinecone in a single call (or internal batches of 100)
+        await upsert_vectors(vectors_to_upsert, namespace=request.store_id)
+        
+        return SyncResponse(
+            message=f"Successfully synced {len(request.products)} products for store {request.store_id}",
+            upserted_count=len(request.products)
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

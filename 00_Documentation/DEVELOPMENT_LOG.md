@@ -19,36 +19,33 @@ A high-performance, stateless recommendation service built with FastAPI, Pinecon
     - `history.py`: User behavior (Purchased, Cart, Viewed).
     - `response.py`: Standardized API formats for recommendations and sync status.
 
-### 3. Logic & Service Implementation
-- [x] Implemented `BaseEmbeddingProvider` (ABC) and concrete `OpenAIProvider` / `GeminiProvider`.
-- [x] Implemented `EmbeddingFactory` for dynamic model switching.
-- [x] Implemented `VectorStoreClient` for Pinecone CRUD and similarity searches.
-- [x] Implemented `ProfileProcessor` for User Interest Vector calculation using NumPy.
-- [x] Implemented `UserRecommender` (Personalization strategy).
-- [x] Implemented `ItemRecommender` (Similarity strategy).
-- [x] Implemented utility functions:
-    - `app/utils/formatter.py`: Product context string construction.
-    - `app/utils/math_ops.py`: NumPy-based normalization and weighted averaging.
+### 3. Architectural Simplification & Multi-tenancy (Latest Update)
+- [x] **Flattened Services:** Removed complex class hierarchies (ABCs, Strategy, Factories).
+- [x] **Functional Patterns:** Converted logic into pure, module-level functions in `app/services/`.
+- [x] **Multi-tenancy:** Implemented **Pinecone Namespaces** to isolate data for multiple Shopify stores.
+- [x] **Schema Update:** Integrated `store_id` into all relevant schemas for automatic namespace routing.
+- [x] **Search Refactoring:** Created a dedicated `SearchRequest` schema for cleaner API interaction.
+- [x] **Client Caching:** Implemented global client caching for LangChain and Pinecone to optimize performance.
 
 ### 4. API Logic Integration
 - [x] Connected `POST /v1/sync` to the embedding and vector store services.
 - [x] Connected `POST /v1/recommend/user` to the `UserRecommender`.
 - [x] Connected `POST /v1/recommend/similar` to the `ItemRecommender`.
 - [x] Connected `POST /v1/search` to the embedding and vector store services.
-- [x] Implemented `app/api/deps.py` for clean dependency injection of services.
 - [x] Created comprehensive API documentation in `00_Documentation/api_endpoints.md`.
+- [x] Updated `System-arch.md` and `Code-Standards.md` to reflect the new functional architecture.
 
 ---
 
 ## 🚀 Next Steps (Testing & Refinement Phase)
 
 ### 1. Advanced Post-Processing
-- [ ] Implement a post-query Reranker in `app/services/processors/reranker.py` for business logic filtering (e.g., exclude out-of-stock items).
+- [ ] Implement a post-query Reranker for business logic filtering (e.g., exclude out-of-stock items).
 
 ### 2. Testing & Validation
+- [x] Updated `tests/test_upsert.py` to support new functional patterns and store namespaces.
 - [ ] Create unit tests for vector math and profile processing.
 - [ ] Perform integration tests with Pinecone and Embedding providers.
-- [ ] Implement fallback mechanisms (e.g., "Popular Items" if embeddings or vector store fail).
 
 ### 3. Documentation
 - [ ] Update `README.md` with setup instructions and API documentation link.
@@ -56,4 +53,4 @@ A high-performance, stateless recommendation service built with FastAPI, Pinecon
 ---
 
 ## 📌 Current Status
-The **Integration Phase** is complete. All API endpoints are now fully functional and connected to the backend services. The system is ready for testing and further refinement.
+The **Simplification Phase** is complete. The codebase has been refactored from a class-based enterprise structure to a high-performance functional architecture that natively supports multiple Shopify stores via Pinecone namespaces.

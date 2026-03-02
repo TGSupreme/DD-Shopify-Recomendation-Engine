@@ -1,75 +1,72 @@
-# Recommendation Engine: Codebase Structure & Development Standards
+# Code Standards & Implementation Guide
 
-## 1. Project Directory Structure
-The project is designed for high modularity to ensure compatibility with future scaling requirements. Each component is isolated to allow for easy swapping of AI models, vector databases, or recommendation algorithms without core logic changes.
+## 1. Project Philosophy
+**Simplicity First.** We prioritize functional, readable, and highly maintainable code. 
+- **Avoid:** Classes, inheritance, factories, and Abstract Base Classes (ABCs).
+- **Prefer:** Pure functions and clear module-level separation.
+- **Asynchronous:** Every I/O operation (Pinecone, LangChain, FastAPI) **must** be `async`.
 
+---
+
+## 2. Directory Structure & Modularization
 ```text
-recommendation-engine/
-├── app/
-│   ├── main.py              # Application entry point & FastAPI initialization
-│   ├── api/                 # API Layer (Routes & Dependencies)
-│   │   ├── deps.py          # Dependency injection (Service instances)
-│   │   └── v1/
-│   │       ├── sync.py      # Product synchronization endpoints
-│   │       ├── recommend.py # User & Product recommendation endpoints
-│   │       └── search.py    # Semantic search endpoints
-│   ├── core/                # Global Configuration
-│   │   ├── config.py        # Environment variables & Pydantic settings
-│   │   └── constants.py     # Default weights, model names, and fixed values
-│   ├── schemas/             # Data Validation (Pydantic Models)
-│   │   ├── product.py       # Shopify/Express product schema
-│   │   ├── history.py       # User behavior (Viewed/Bought/Cart) schema
-│   │   └── response.py      # Standardized API response formats
-│   ├── services/            # Business Logic (The "Brain")
-│   │   ├── embedding/       # LangChain Embedding Providers
-│   │   │   ├── factory.py   # Model switcher (OpenAI/Gemini)
-│   │   │   └── base.py      # Abstract base class for providers
-│   │   ├── vector_store/    # Pinecone Integration
-│   │   │   └── client.py    # Vector CRUD operations
-│   │   ├── recommender/     # Recommendation Strategies
-│   │   │   ├── base.py      # Strategy Interface
-│   │   │   ├── user.py      # Personalization logic (Weighted Averaging)
-│   │   │   └── item.py      # Similarity logic (Related products)
-│   │   └── processors/      # Logic Workers
-│   │       ├── profile.py   # User Interest Vector calculation (NumPy)
-│   │       └── reranker.py  # Post-query filtering & business logic
-│   ├── utils/               # Shared Helpers
-│   │   ├── formatter.py     # JSON-to-String text formatting
-│   │   └── math_ops.py      # NumPy normalization and vector math
-├── tests/                   # Unit & Integration Tests
-├── .env                     # Configuration (Not tracked in Git)
-├── requirements.txt         # Dependency manifest
-└── README.md
+app/
+├── api/             # FastAPI Route Handlers
+│   └── v1/          # Versioned API logic
+├── core/            # Config (Pydantic Settings)
+├── schemas/         # Request/Response validation (Pydantic)
+├── services/        # Functional Business Logic
+│   ├── embedding.py # LangChain wrappers
+│   ├── recommender.py# Recommendation math and logic
+│   └── vector_store.py# Pinecone operations
+└── utils/           # Shared stateless helper functions
 ```
 
 ---
 
-## 2. Coding Rules & Regulations
+## 3. Implementation Patterns
 
-### A. Modular Design (The "Plug-and-Play" Rule)
-*   **No Hardcoding:** Never hardcode API keys or model names. Use `app/core/config.py`.
-*   **Interface First:** All services (Embedding, VectorStore, Recommender) must inherit from an Abstract Base Class (ABC) to ensure swapping components doesn't break the system.
-*   **Single Responsibility:** A route should only handle the request; the `recommender` service handles the logic; the `processor` handles the math.
+### Global Client Singleton Pattern
+To prevent re-initializing expensive SDK clients (like LangChain or Pinecone) on every request, we use a global variable with a getter function.
 
-### B. Technical Standards
-*   **Type Hinting:** Mandatory use of Python type hints (`name: str`, `vector: np.ndarray`) for better IDE support and error catching.
-*   **Async/Await:** Use `async` for all I/O bound operations (Pinecone queries, API calls to OpenAI/Gemini) to ensure the FastAPI server remains responsive.
-*   **Statelessness:** The server must not store any local state. Every request must be fulfilled using the data provided in the payload and the external vector database.
+```python
+_client = None
 
-### C. Math & Performance
-*   **NumPy Only:** All vector operations (averaging, weighting, normalization) must be performed using NumPy for speed.
-*   **Normalization:** Always normalize vectors before sending them to Pinecone or performing weighted math to maintain Cosine Similarity accuracy.
+def get_client():
+    global _client
+    if _client is None:
+        # Initialize only once
+        _client = ExpensiveSDKClient(api_key=settings.API_KEY)
+    return _client
+```
 
-### D. Data Integrity (The "Validation" Rule)
-*   **Pydantic Models:** Every incoming JSON from the Express server must be validated against a Pydantic schema in `app/schemas/`.
-*   **Fail Gracefully:** If an embedding model fails, the system should return a clear error code or fallback to a simpler "Popular Items" recommendation if applicable.
+### Namespace Enforcement
+Every database call **must** accept a `namespace: str` parameter. This is the cornerstone of our multi-tenancy support for Shopify stores. 
+
+```python
+# Rule: No database call without a namespace
+async def query_nearest(vector: np.ndarray, namespace: str, top_k: int = 10)
+```
+
+### Pure Function Utils
+Helpers in `app/utils/` should be "Pure Functions": 
+- No side effects (no API calls).
+- Deterministic output based on inputs.
+- Highly testable (unit tests).
 
 ---
 
-## 3. Development Workflow
+## 4. Error Handling & Validation
+- **Pydantic Validation:** All external data **must** be validated via Pydantic schemas in `app/schemas/`.
+- **API Response:** Use the standardized `RecommendationResponse` and `SyncResponse` models from `app/schemas/response.py`.
+- **Status Codes:**
+    - `200 OK`: Successful sync or recommendation.
+    - `500 Internal Server Error`: For any unexpected failures (Pinecone/OpenAI down).
 
-1.  **Define Schema:** Update `app/schemas/` if the Express server adds new fields to the user history or product data.
-2.  **Update Formatter:** Ensure `app/utils/formatter.py` includes new relevant fields in the text string used for embeddings.
-3.  **Implement Logic:** Add/Update the specific strategy in `app/services/recommender/`.
-4.  **Register Route:** Add the endpoint to `app/api/v1/`.
-5.  **Test:** Run unit tests for the math logic in `app/services/processors/`.
+---
+
+## 5. Development Workflow
+1.  **Sync:** Add products via `POST /v1/sync/` for a specific `store_id`.
+2.  **Verify:** Check the logs or LangSmith to confirm the embedding and upsert occurred.
+3.  **Recommend:** Test the personalization via `POST /v1/recommend/user` for that same `store_id`.
+4.  **Validate:** Ensure the scores and product IDs returned match expectations.

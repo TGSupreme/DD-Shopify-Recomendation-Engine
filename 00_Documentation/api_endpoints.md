@@ -1,78 +1,97 @@
-# Recommendation Engine: API Endpoints Documentation
+# API Endpoints Documentation
 
-This document provides a detailed technical reference for the FastAPI Recommendation Service. All endpoints are versioned under `/v1`.
+## Base URL
+`http://localhost:8000/v1`
 
 ---
 
-## 1. Product Synchronization
+## 1. Sync Product (Single)
+**Endpoint:** `POST /sync/`  
+**Description:** Upserts a single product into the vector database within a store-specific namespace. Ideal for real-time Shopify webhooks.
 
-### `POST /v1/sync/`
-**Purpose:** Keeps the Pinecone vector database in sync with the primary Shopify/MongoDB product data.
-
-**Request Body (`Product` Schema):**
+**Request Body:**
 ```json
 {
-  "id": "prod_123",
-  "title": "Classic Cotton T-Shirt",
-  "color": "Blue",
-  "material": "100% Cotton",
-  "tags": ["casual", "summer", "basics"],
-  "price": 29.99,
-  "category": "Apparel",
+  "id": "p1",
+  "store_id": "shopify-store-123",
+  "title": "Premium Cotton Blue Shirt",
+  "price": 45.0,
+  "category": "Shirts",
   "availability": true,
-  "gender": "Unisex",
+  "tags": ["casual", "office"],
   "extra_metadata": {
-    "brand": "EcoWear",
-    "sku": "TSH-B-001"
+    "material": "Cotton",
+    "color": "Blue"
   }
 }
 ```
 
-**Logic:**
-1. Formats attributes into a context string: `Product: Classic Cotton T-Shirt. Color: Blue. Material: 100% Cotton. Tags: casual,summer,basics`.
-2. Generates a vector embedding using the configured provider (OpenAI or Gemini).
-3. Upserts the vector to Pinecone with the provided metadata for filtering.
-
-**Response (`SyncResponse`):**
+**Response:**
 ```json
 {
   "status": "success",
-  "message": "Product prod_123 synced successfully",
+  "message": "Product p1 synced successfully for store shopify-store-123",
   "upserted_count": 1
 }
 ```
 
 ---
 
-## 2. Personalized Recommendations
+## 2. Bulk Sync Products
+**Endpoint:** `POST /sync/bulk`  
+**Description:** Upserts multiple products at once. Extremely efficient for the initial Shopify store import.
 
-### `POST /v1/recommend/user`
-**Purpose:** Generates a "For You" list of recommended products based on a user's interaction history.
-
-**Request Body (`UserHistory` Schema):**
+**Request Body:**
 ```json
 {
-  "purchased": ["id_1", "id_2"],
-  "add_to_cart": ["id_3"],
-  "viewed": ["id_4", "id_5", "id_6"]
+  "store_id": "shopify-store-123",
+  "products": [
+    {
+      "id": "p1",
+      "store_id": "shopify-store-123",
+      "title": "Blue Shirt",
+      "price": 45.0
+    },
+    {
+      "id": "p2",
+      "store_id": "shopify-store-123",
+      "title": "Red Pants",
+      "price": 60.0
+    }
+  ]
 }
 ```
 
-**Logic:**
-1. Fetches existing vectors for all provided IDs from Pinecone.
-2. Calculates a **User Interest Vector** using weighted averaging:
-   - **Purchased:** 70% weight
-   - **Cart/Liked:** 20% weight
-   - **Viewed:** 10% weight
-3. Normalizes the resulting vector.
-4. Queries Pinecone for the Top 10 nearest neighbors.
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Successfully synced 2 products for store shopify-store-123",
+  "upserted_count": 2
+}
+```
 
-**Response (`RecommendationResponse`):**
+---
+
+## 3. Semantic Search
+**Endpoint:** `POST /search/`  
+**Description:** Searches for products within a specific store using natural language.
+
+**Request Body:**
+```json
+{
+  "query": "blue cotton shirt for office",
+  "store_id": "shopify-store-123",
+  "top_k": 10
+}
+```
+
+**Response:**
 ```json
 {
   "items": [
-    { "product_id": "prod_789", "score": 0.982 },
-    { "product_id": "prod_456", "score": 0.945 }
+    { "product_id": "p1", "score": 0.92 },
+    { "product_id": "p45", "score": 0.85 }
   ],
   "status": "success"
 }
@@ -80,24 +99,26 @@ This document provides a detailed technical reference for the FastAPI Recommenda
 
 ---
 
-## 3. Related Items
+## 3. User Recommendations ("For You")
+**Endpoint:** `POST /recommend/user`  
+**Description:** Generates personalized recommendations based on a user's store-specific history.
 
-### `POST /v1/recommend/similar/{product_id}`
-**Purpose:** Finds products similar to a specific item (used for "Related Products" sections).
+**Request Body:**
+```json
+{
+  "store_id": "shopify-store-123",
+  "purchased": ["p1", "p2"],
+  "add_to_cart": ["p10"],
+  "viewed": ["p5", "p6", "p7"]
+}
+```
 
-**Path Parameter:**
-- `product_id` (string): The ID of the product to find similarities for.
-
-**Logic:**
-1. Fetches the vector for the given `product_id`.
-2. Performs a nearest neighbor search in Pinecone using that vector.
-
-**Response (`RecommendationResponse`):**
+**Response:**
 ```json
 {
   "items": [
-    { "product_id": "prod_related_1", "score": 0.991 },
-    { "product_id": "prod_related_2", "score": 0.885 }
+    { "product_id": "p22", "score": 0.88 },
+    { "product_id": "p99", "score": 0.81 }
   ],
   "status": "success"
 }
@@ -105,35 +126,20 @@ This document provides a detailed technical reference for the FastAPI Recommenda
 
 ---
 
-## 4. Semantic Search
+## 4. Similar Products ("Related Items")
+**Endpoint:** `POST /recommend/similar/{product_id}?store_id={store_id}`  
+**Description:** Finds nearest neighbors for a specific product within the same store's namespace.
 
-### `POST /v1/search/`
-**Purpose:** Enables natural language search (e.g., "Find me a warm jacket for a winter trip").
+**Query Parameters:**
+- `store_id` (Required): The ID of the Shopify store.
 
-**Query Parameter:**
-- `query` (string): The natural language search string.
-
-**Logic:**
-1. Generates an embedding for the search string.
-2. Queries Pinecone for the Top 10 most semantically similar products.
-
-**Response (`RecommendationResponse`):**
+**Response:**
 ```json
 {
   "items": [
-    { "product_id": "winter_jacket_01", "score": 0.921 },
-    { "product_id": "parka_blue", "score": 0.895 }
+    { "product_id": "p2", "score": 0.98 },
+    { "product_id": "p3", "score": 0.95 }
   ],
   "status": "success"
-}
-```
-
----
-
-## Error Handling
-In case of an error (e.g., missing API keys, database connection issues), the API returns a `500 Internal Server Error` with a detailed message:
-```json
-{
-  "detail": "Error message description here"
 }
 ```

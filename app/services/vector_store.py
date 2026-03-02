@@ -1,0 +1,53 @@
+from typing import List, Dict, Any, Optional
+import numpy as np
+from pinecone import Pinecone
+from app.core.config import settings
+
+# Global client and index cache to avoid re-initialization
+_pc_client = None
+_pc_index = None
+
+def get_index():
+    global _pc_client, _pc_index
+    if _pc_index is None:
+        _pc_client = Pinecone(api_key=settings.PINECONE_API_KEY)
+        _pc_index = _pc_client.Index(settings.PINECONE_INDEX_NAME)
+    return _pc_index
+
+async def upsert_vector(id: str, vector: np.ndarray, metadata: Dict[str, Any], namespace: str):
+    """Upsert a single vector to Pinecone within a specific namespace."""
+    index = get_index()
+    index.upsert(
+        vectors=[{"id": id, "values": vector.tolist(), "metadata": metadata}],
+        namespace=namespace
+    )
+
+async def upsert_vectors(vectors_data: List[Dict[str, Any]], namespace: str):
+    """Upsert multiple vectors to Pinecone within a specific namespace."""
+    if not vectors_data:
+        return
+    index = get_index()
+    index.upsert(vectors=vectors_data, namespace=namespace)
+
+async def fetch_vectors(ids: List[str], namespace: str) -> Dict[str, np.ndarray]:
+    """Fetch multiple vectors from Pinecone by their IDs within a namespace."""
+    if not ids:
+        return {}
+    index = get_index()
+    response = index.fetch(ids=ids, namespace=namespace)
+    vectors = {}
+    for id, data in response.get("vectors", {}).items():
+        vectors[id] = np.array(data["values"])
+    return vectors
+
+async def query_nearest(vector: np.ndarray, namespace: str, top_k: int = 10, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """Query Pinecone for the nearest neighbor vectors within a specific namespace."""
+    index = get_index()
+    query_response = index.query(
+        vector=vector.tolist(),
+        top_k=top_k,
+        include_metadata=True,
+        filter=filters,
+        namespace=namespace
+    )
+    return query_response.get("matches", [])
