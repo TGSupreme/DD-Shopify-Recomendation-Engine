@@ -51,3 +51,9 @@ async def query_nearest(vector: np.ndarray, namespace: str, top_k: int = 10, fil
         namespace=namespace
     )
     return query_response.get("matches", [])
+
+async def list_namespaces() -> List[str]:
+    """Fetch all existing namespaces from Pinecone index stats."""
+    index = get_index()
+    stats = index.describe_index_stats()
+    return list(stats.get("namespaces", {}).keys())

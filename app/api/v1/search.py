@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from app.schemas.response import RecommendationResponse, RecommendationItem
 from app.schemas.product import SearchRequest
 from app.services.embedding import embed_query
-from app.services.vector_store import query_nearest
+from app.services.recommender import get_similar_by_vector, NamespaceNotFoundError
 
 router = APIRouter()
 
@@ -14,15 +14,14 @@ async def search(request: SearchRequest):
         search_vector = await embed_query(request.query)
         
         # 2. Query Pinecone for the nearest matches within the store's namespace
-        matches = await query_nearest(
+        items = await get_similar_by_vector(
             search_vector, 
             namespace=request.store_id, 
             top_k=request.top_k
         )
         
-        # 3. Transform into RecommendationItem objects
-        items = [RecommendationItem(product_id=m["id"], score=m["score"]) for m in matches]
-        
         return RecommendationResponse(items=items)
+    except NamespaceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
