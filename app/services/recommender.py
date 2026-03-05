@@ -43,7 +43,7 @@ async def calculate_user_vector(purchased: List[np.ndarray], cart: List[np.ndarr
     # 4. Normalize for Cosine Similarity
     return normalize_vector(weighted_vector)
 
-async def get_user_recommendations(history: UserHistory, top_k: int = 10) -> List[RecommendationItem]:
+async def get_user_recommendations(history: UserHistory, top_k: int = settings.TOP_K) -> List[RecommendationItem]:
     """Generate 'For You' personalized recommendations based on user history."""
     # 1. Verify store exists
     namespaces = await list_namespaces()
@@ -71,7 +71,7 @@ async def get_user_recommendations(history: UserHistory, top_k: int = 10) -> Lis
     # 6. Transform results into the standard response format
     return [RecommendationItem(product_id=m["id"], score=m["score"]) for m in matches]
 
-async def get_item_recommendations(product_id: str, store_id: str, top_k: int = 10) -> List[RecommendationItem]:
+async def get_item_recommendations(product_id: str, store_id: str, top_k: int = settings.TOP_K) -> List[RecommendationItem]:
     """Find the nearest neighbors in Pinecone based on the product's vector."""
     # 1. Verify store exists
     namespaces = await list_namespaces()
@@ -89,7 +89,7 @@ async def get_item_recommendations(product_id: str, store_id: str, top_k: int = 
     # 4. Transform results into the standard response format
     return [RecommendationItem(product_id=m["id"], score=m["score"]) for m in matches]
 
-async def get_similar_by_vector(vector: np.ndarray, namespace: str, top_k: int = 10) -> List[RecommendationItem]:
+async def get_similar_by_vector(vector: np.ndarray, namespace: str, top_k: int = settings.TOP_K) -> List[RecommendationItem]:
     """Find the nearest neighbors based on a raw vector."""
     # 1. Verify store exists
     namespaces = await list_namespaces()

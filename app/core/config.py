@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     WEIGHT_CART: float = 0.2
     WEIGHT_VIEWED: float = 0.1
 
+    TOP_K:int = 11
     model_config = SettingsConfigDict(env_file=".env")
 
 settings = Settings()

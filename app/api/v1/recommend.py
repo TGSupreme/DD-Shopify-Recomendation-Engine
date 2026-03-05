@@ -26,7 +26,14 @@ async def recommend_similar(product_id: str, store_id: str):
     """Find 'Related Items' for a product page within a specific store."""
     try:
         items = await get_item_recommendations(product_id, store_id=store_id)
-        return RecommendationResponse(items=items)
+        # Remove the requested product from recommendations
+        filtered_items = [
+            item for item in items if item.product_id != product_id
+        ]
+
+        return RecommendationResponse(items=filtered_items)
+    
+
     except (NamespaceNotFoundError, ProductNotFoundError) as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
