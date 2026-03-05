@@ -45,10 +45,12 @@ async def sync_products_bulk(request: BatchSyncRequest):
 
         # 1. Format all product context strings for batch embedding
         content_strings = [format_product_context(p) for p in request.products]
-        
+        print("Product context formatting completed")
+
         # 2. Generate embeddings in a single batch call
         vectors = await embed_documents(content_strings)
-        
+        print("Embeddings generated")
+
         # 3. Prepare list of Pinecone-format vectors with metadata
         vectors_to_upsert = []
         for i, product in enumerate(request.products):
@@ -65,9 +67,11 @@ async def sync_products_bulk(request: BatchSyncRequest):
                 "values": vectors[i].tolist(),
                 "metadata": metadata
             } )
+        print("Vectors prepared for Pinecone")
 
         # 4. Upsert everything to Pinecone
         await upsert_vectors(vectors_to_upsert, namespace=request.store_id)
+        print("Vectors successfully upserted to Pinecone")
         
         return SyncResponse(
             message=f"Successfully synced {len(request.products)} products for store {request.store_id}",

@@ -49,6 +49,7 @@ async def embed_documents(texts: List[str]) -> List[np.ndarray]:
     try:
         client = get_embedding_client()
         embeddings = await client.aembed_documents(texts)
+        print("Embedding service returned vectors")
         return [np.array(e) for e in embeddings]
     except Exception as e:
         raise EmbeddingServiceError(f"Bulk embedding service failed: {str(e)}")
