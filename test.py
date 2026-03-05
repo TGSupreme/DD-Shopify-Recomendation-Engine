@@ -27,3 +27,6 @@ load_dotenv()
 embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 vector = embeddings.embed_query("hello, world!")
 print(len(vector))
+
+
+print("blahblah blah")
