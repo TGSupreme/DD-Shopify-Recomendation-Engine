@@ -1,7 +1,14 @@
 from fastapi import FastAPI
 from app.api.v1 import sync, recommend, search
+from app.services.vector_store import verify_pinecone_connection
 
 app = FastAPI(title="Recommendation Engine Service")
+
+@app.on_event("startup")
+async def startup_event():
+    """Verify core service connections on startup."""
+    verify_pinecone_connection()
+    print("Pinecone connection verified successfully.")
 
 # Include Routers
 app.include_router(sync.router, prefix="/v1/sync", tags=["sync"])

@@ -57,3 +57,13 @@ async def list_namespaces() -> List[str]:
     index = get_index()
     stats = index.describe_index_stats()
     return list(stats.get("namespaces", {}).keys())
+
+def verify_pinecone_connection():
+    """Verify Pinecone API key and index existence on startup."""
+    try:
+        index = get_index()
+        # This will trigger a network call to verify index existence
+        index.describe_index_stats()
+        return True
+    except Exception as e:
+        raise RuntimeError(f"Failed to connect to Pinecone: {str(e)}")
