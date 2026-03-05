@@ -69,13 +69,19 @@ async def sync_products_bulk(request: BatchSyncRequest):
             } )
         print("Vectors prepared for Pinecone")
 
-        # 4. Upsert everything to Pinecone
-        await upsert_vectors(vectors_to_upsert, namespace=request.store_id)
-        print("Vectors successfully upserted to Pinecone")
+        # 4. Upsert everything to Pinecone Upsert in batches of 100
+        batch_size = 100
+        total_upserted = 0
+
+        for i in range(0, len(vectors_to_upsert), batch_size):
+            batch = vectors_to_upsert[i:i + batch_size]
+            await upsert_vectors(batch, namespace=request.store_id)
+            total_upserted += len(batch)
+            print(f"{total_upserted} Vectors successfully upserted to Pinecone")
         
         return SyncResponse(
-            message=f"Successfully synced {len(request.products)} products for store {request.store_id}",
-            upserted_count=len(request.products)
+            message=f"Successfully synced {total_upserted} products for store {request.store_id}",  
+            upserted_count=total_upserted
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
