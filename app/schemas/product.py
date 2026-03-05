@@ -1,18 +1,19 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+from typing import List, Optional
+
+class ProductOption(BaseModel):
+    name: str
+    values: List[str]
 
 class Product(BaseModel):
     id: str
     store_id: str
     title: str
-    color: Optional[str] = None
-    material: Optional[str] = None
+    product_type: str
+    vendor: str
     tags: List[str] = []
-    price: Optional[float] = None
-    category: Optional[str] = None
-    availability: Optional[bool] = None
-    gender: Optional[str] = None
-    extra_metadata: Dict[str, Any] = Field(default_factory=dict)
+    options: List[ProductOption] = []
+    price: float
 
 class SearchRequest(BaseModel):
     query: str

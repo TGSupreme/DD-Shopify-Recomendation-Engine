@@ -22,10 +22,11 @@ async def sync_product(product: Product):
         metadata = {
             "title": product.title,
             "price": product.price,
-            "category": product.category,
-            "availability": product.availability,
-            "gender": product.gender,
-            **product.extra_metadata
+            "product_type": product.product_type,
+            "vendor": product.vendor,
+            "tags": product.tags,
+            # Flatten options for metadata if needed for filtering
+            "options": [f"{opt.name}: {', '.join(opt.values)}" for opt in product.options]
         }
         
         # 4. Upsert to Pinecone
@@ -45,7 +46,7 @@ async def sync_products_bulk(request: BatchSyncRequest):
         # 1. Format all product context strings for batch embedding
         content_strings = [format_product_context(p) for p in request.products]
         
-        # 2. Generate embeddings in a single batch call (massive performance gain)
+        # 2. Generate embeddings in a single batch call
         vectors = await embed_documents(content_strings)
         
         # 3. Prepare list of Pinecone-format vectors with metadata
@@ -54,10 +55,10 @@ async def sync_products_bulk(request: BatchSyncRequest):
             metadata = {
                 "title": product.title,
                 "price": product.price,
-                "category": product.category,
-                "availability": product.availability,
-                "gender": product.gender,
-                **product.extra_metadata
+                "product_type": product.product_type,
+                "vendor": product.vendor,
+                "tags": product.tags,
+                "options": [f"{opt.name}: {', '.join(opt.values)}" for opt in product.options]
             }
             vectors_to_upsert.append({
                 "id": product.id,
@@ -65,7 +66,7 @@ async def sync_products_bulk(request: BatchSyncRequest):
                 "metadata": metadata
             } )
 
-        # 4. Upsert everything to Pinecone in a single call (or internal batches of 100)
+        # 4. Upsert everything to Pinecone
         await upsert_vectors(vectors_to_upsert, namespace=request.store_id)
         
         return SyncResponse(
