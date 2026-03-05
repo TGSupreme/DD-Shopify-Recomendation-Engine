@@ -6,10 +6,11 @@ class ProductOption(BaseModel):
     values: List[str]
 
 class Product(BaseModel):
+
     id: str
     store_id: str
     title: str
-    product_type: str
+    product_type: Optional[str] = None
     vendor: str
     tags: List[str] = []
     options: List[ProductOption] = []
