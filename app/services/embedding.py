@@ -21,6 +21,12 @@ def get_embedding_client():
                 google_api_key=settings.GOOGLE_API_KEY,
                 model="models/gemini-embedding-001"
             )
+        elif provider == "jina":
+            from langchain_community.embeddings import JinaEmbeddings
+            _embedding_client = JinaEmbeddings(
+                jina_api_key=settings.JINA_API_KEY,
+                model_name="jina-embeddings-v2-base-en"
+            )
         else:
             raise ValueError(f"Unsupported embedding provider: {provider}")
     return _embedding_client

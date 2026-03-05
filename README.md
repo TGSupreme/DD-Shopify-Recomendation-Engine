@@ -9,7 +9,7 @@ A high-performance, multi-tenant recommendation service built with **FastAPI**, 
 ### 1. Prerequisites
 - Python 3.9+
 - [Pinecone](https://www.pinecone.io/) Account (Index created with 1536 dimensions for OpenAI or 768 dimensions for Gemini).
-- [OpenAI](https://openai.com/) or [Google Gemini](https://ai.google.dev/) API Key.
+- [OpenAI](https://openai.com/) or [Google Gemini](https://ai.google.dev/) or [Jina AI](https://jina.ai/) API Key.
 - [LangSmith](https://smith.langchain.com/) API Key (Optional, for tracing).
 
 ### 2. Installation
@@ -33,11 +33,12 @@ Create a `.env` file in the root directory with the following variables:
 # API Keys
 OPENAI_API_KEY=your_openai_key
 GOOGLE_API_KEY=your_google_key
+JINA_API_KEY=your_jina_key
 PINECONE_API_KEY=your_pinecone_key
 PINECONE_INDEX_NAME=your_index_name
 
 # Embedding Configuration
-EMBEDDING_PROVIDER=openai  # or "gemini"
+EMBEDDING_PROVIDER=openai  # or "gemini" or "jina"
 
 # LangChain/LangSmith Tracing
 LANGSMITH_TRACING=true

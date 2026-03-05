@@ -5,11 +5,12 @@ class Settings(BaseSettings):
     # API Keys
     OPENAI_API_KEY: Optional[str] = None
     GOOGLE_API_KEY: Optional[str] = None
+    JINA_API_KEY: Optional[str] = None
     PINECONE_API_KEY: Optional[str] = None
     PINECONE_INDEX_NAME: Optional[str] = None
     
     # Embedding Configuration
-    EMBEDDING_PROVIDER: str = "openai" # "openai" or "gemini"
+    EMBEDDING_PROVIDER: str = "openai" # "openai", "gemini", or "jina"
     
     # Recommendation Weights
     WEIGHT_PURCHASED: float = 0.7

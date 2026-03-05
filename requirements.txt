@@ -6,5 +6,6 @@ numpy
 langchain
 langchain-openai
 langchain-google-genai
+langchain-community
 pinecone
 python-dotenv
