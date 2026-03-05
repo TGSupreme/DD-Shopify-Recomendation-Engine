@@ -50,8 +50,12 @@ async def get_user_recommendations(history: UserHistory, top_k: int = settings.T
     if history.store_id not in namespaces:
         raise NamespaceNotFoundError(f"Store '{history.store_id}' not found.")
 
+    
     # 2. Fetch vectors for all products in the history
     all_ids = history.purchased + history.add_to_cart + history.viewed
+    if all_ids is [] :
+        raise ProductNotFoundError(f"There is no data in user history.")
+    
     existing_vectors = await fetch_vectors(all_ids, namespace=history.store_id)
     
     # 3. Extract specific vectors for each category
