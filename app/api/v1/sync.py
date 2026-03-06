@@ -1,6 +1,6 @@
 from typing import List
 import logging
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException,Query
 from app.schemas.product import Product, BatchSyncRequest
 from app.schemas.response import SyncResponse, DeleteResponse
 from app.utils.formatter import format_product_context
@@ -114,6 +114,7 @@ async def delete_product(product_id: str, store_id: str = Query(...)):
             delete_count= 1
         )
     except Exception as e:
+        logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/store/{store_id}", response_model=DeleteResponse)
@@ -130,6 +131,7 @@ async def delete_store(store_id: str):
             delete_count= deleted_count
         )
     except Exception as e:
+        logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/status/{store_id}")
@@ -143,4 +145,5 @@ async def get_sync_status(store_id: str):
             "status": "success"
         }
     except Exception as e:
+        logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
