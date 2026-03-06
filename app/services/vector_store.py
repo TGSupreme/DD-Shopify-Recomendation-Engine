@@ -58,6 +58,23 @@ async def list_namespaces() -> List[str]:
     stats = index.describe_index_stats()
     return list(stats.get("namespaces", {}).keys())
 
+async def delete_vector(id: str, namespace: str):
+    """Delete a single vector from Pinecone by its ID within a namespace."""
+    index = get_index()
+    index.delete(ids=[id], namespace=namespace)
+
+async def delete_namespace(namespace: str):
+    """Delete all vectors in a specific namespace."""
+    index = get_index()
+    index.delete(delete_all=True, namespace=namespace)
+
+async def get_namespace_stats(namespace: str) -> Dict[str, Any]:
+    """Get statistics for a specific namespace (e.g., vector count)."""
+    index = get_index()
+    stats = index.describe_index_stats()
+    namespace_stats = stats.get("namespaces", {}).get(namespace, {"vector_count": 0})
+    return namespace_stats
+
 def verify_pinecone_connection():
     """Verify Pinecone API key and index existence on startup."""
     try:

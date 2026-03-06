@@ -163,3 +163,49 @@
   "status": "success"
 }
 ```
+
+---
+
+## 6. Delete Product
+**Endpoint:** `DELETE /sync/{product_id}?store_id={store_id}`  
+**Description:** Deletes a specific product's vector from a store's namespace.
+
+**Query Parameters:**
+- `store_id` (Required): The ID of the Shopify store.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Product p1 deleted successfully from store reneecosmetics.in"
+}
+```
+
+---
+
+## 7. Delete Store (Wipe Data)
+**Endpoint:** `DELETE /sync/store/{store_id}`  
+**Description:** Deletes all vectors within a store's namespace. Use this for uninstalls.
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "All data for store reneecosmetics.in has been deleted"
+}
+```
+
+---
+
+## 8. Sync Status
+**Endpoint:** `GET /sync/status/{store_id}`  
+**Description:** Returns the total count of vectors synced for a specific store.
+
+**Response:**
+```json
+{
+  "store_id": "reneecosmetics.in",
+  "vector_count": 1250,
+  "status": "success"
+}
+```

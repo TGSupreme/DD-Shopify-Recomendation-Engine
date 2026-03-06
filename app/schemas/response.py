@@ -14,3 +14,8 @@ class SyncResponse(BaseModel):
     status: str = "success"
     message: Optional[str] = None
     upserted_count: int = 0
+
+class DeleteResponse(BaseModel):
+    status : str = "sucess"
+    message: Optional[str] = None
+    delete_count: int = 0

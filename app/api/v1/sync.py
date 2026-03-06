@@ -2,10 +2,16 @@ from typing import List
 import logging
 from fastapi import APIRouter, HTTPException
 from app.schemas.product import Product, BatchSyncRequest
-from app.schemas.response import SyncResponse
+from app.schemas.response import SyncResponse, DeleteResponse
 from app.utils.formatter import format_product_context
 from app.services.embedding import embed_query, embed_documents
-from app.services.vector_store import upsert_vector, upsert_vectors
+from app.services.vector_store import (
+    upsert_vector, 
+    upsert_vectors, 
+    delete_vector, 
+    delete_namespace, 
+    get_namespace_stats
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,4 +101,46 @@ async def sync_products_bulk(request: BatchSyncRequest):
         )
     except Exception as e:
         logger.error(str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{product_id}", response_model=DeleteResponse)
+async def delete_product(product_id: str, store_id: str = Query(...)):
+    """Delete a single product's vector from a store's namespace."""
+    try:
+        await delete_vector(product_id, namespace=store_id)
+        return DeleteResponse(
+            message=f"Product {product_id} deleted successfully from store {store_id}",
+            status="success",
+            delete_count= 1
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/store/{store_id}", response_model=DeleteResponse)
+async def delete_store(store_id: str):
+    """Delete all vectors in a store's namespace (wipe store data)."""
+    try:
+        stats = await get_namespace_stats(namespace=store_id)
+        deleted_count = stats.get("vector_count", 0)
+
+        await delete_namespace(namespace=store_id)
+        return DeleteResponse(
+            message=f"All data for store {store_id} has been deleted",
+            status="success",
+            delete_count= deleted_count
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/status/{store_id}")
+async def get_sync_status(store_id: str):
+    """Get the current synchronization status (vector count) for a store."""
+    try:
+        stats = await get_namespace_stats(namespace=store_id)
+        return {
+            "store_id": store_id,
+            "vector_count": stats.get("vector_count", 0),
+            "status": "success"
+        }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
