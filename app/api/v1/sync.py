@@ -1,7 +1,8 @@
-from typing import List
+from typing import List, Optional
 import logging
-from fastapi import APIRouter, HTTPException,Query
-from app.schemas.product import Product, BatchSyncRequest
+import json
+from fastapi import APIRouter, HTTPException, Query, Request, Header
+from app.schemas.product import Product, BatchSyncRequest, ProductOption
 from app.schemas.response import SyncResponse, DeleteResponse
 from app.utils.formatter import format_product_context
 from app.services.embedding import embed_query, embed_documents
@@ -21,6 +22,95 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.post("/webhook")
+async def shopify_webhook(
+    request: Request,
+    x_shopify_topic: str = Header(None),
+    x_shopify_shop_domain: str = Header(None)
+):
+    """
+    Unified Shopify Webhook handler for products/create, products/update, and products/delete.
+    """
+    try:
+        body = await request.json()
+        topic = x_shopify_topic
+        store_id = x_shopify_shop_domain
+
+        if not topic or not store_id:
+            logger.error(f"Missing headers: topic={topic}, store={store_id}")
+            raise HTTPException(status_code=400, detail="Missing Shopify headers")
+
+        logger.info(f"Received webhook: {topic} for store: {store_id}")
+
+        # Handle Create or Update
+        if topic in ["products/create", "products/update"]:
+            # 1. Parse into Product schema (using logic from your debug API)
+            product_id = str(body.get("id"))
+            title = body.get("title")
+            product_type = body.get("product_type")
+            vendor = body.get("vendor")
+            
+            tags_str = body.get("tags", "")
+            tags = [t.strip() for t in tags_str.split(",")] if tags_str else []
+
+            options = [
+                ProductOption(name=o["name"], values=o["values"])
+                for o in body.get("options", [])
+            ]
+
+            variants = body.get("variants", [])
+            price = float(variants[0]["price"]) if variants else 0.0
+
+            product = Product(
+                id=product_id,
+                store_id=store_id,
+                title=title,
+                product_type=product_type,
+                vendor=vendor,
+                tags=tags,
+                options=options,
+                price=price,
+            )
+
+            # 2. Format context and generate embedding
+            content_string = format_product_context(product)
+            vector = await embed_query(content_string)
+
+            # 3. Prepare metadata
+            metadata = {
+                "title": product.title,
+                "price": product.price,
+                "product_type": product.product_type,
+                "vendor": product.vendor,
+                "tags": product.tags,
+                "options": [f"{opt.name}: {', '.join(opt.values)}" for opt in product.options]
+            }
+
+            # 4. Upsert to Pinecone
+            await upsert_vector(product.id, vector, metadata, namespace=store_id)
+            logger.info(f"Product {product_id} synced via webhook ({topic})")
+            
+            return {"status": "success", "action": "upsert", "product_id": product_id}
+
+        # Handle Delete
+        elif topic == "products/delete":
+            product_id = str(body.get("id"))
+            if not product_id:
+                raise HTTPException(status_code=400, detail="Product ID missing in delete payload")
+
+            await delete_vector(product_id, namespace=store_id)
+            logger.info(f"Product {product_id} deleted via webhook ({topic})")
+            
+            return {"status": "success", "action": "delete", "product_id": product_id}
+
+        else:
+            logger.warning(f"Unhandled topic: {topic}")
+            return {"status": "ignored", "topic": topic}
+
+    except Exception as e:
+        logger.error(f"Webhook processing error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=SyncResponse)
 async def sync_product(product: Product):
