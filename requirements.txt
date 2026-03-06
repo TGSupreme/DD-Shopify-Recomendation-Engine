@@ -9,4 +9,4 @@ langchain-google-genai
 langchain-community
 pinecone
 python-dotenv
-logger
+logging
