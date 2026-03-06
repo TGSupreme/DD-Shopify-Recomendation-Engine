@@ -167,7 +167,7 @@
 ---
 
 ## 6. Delete Product
-**Endpoint:** `DELETE /sync/{product_id}?store_id={store_id}`  
+**Endpoint:** `DELETE /v1/sync/{product_id}?store_id={store_id}`  
 **Description:** Deletes a specific product's vector from a store's namespace.
 
 **Query Parameters:**
@@ -177,28 +177,30 @@
 ```json
 {
   "status": "success",
-  "message": "Product p1 deleted successfully from store reneecosmetics.in"
+  "message": "Product p1 deleted successfully from store reneecosmetics.in",
+  "delete_count": 1
 }
 ```
 
 ---
 
 ## 7. Delete Store (Wipe Data)
-**Endpoint:** `DELETE /sync/store/{store_id}`  
+**Endpoint:** `DELETE /v1/sync/store/{store_id}`  
 **Description:** Deletes all vectors within a store's namespace. Use this for uninstalls.
 
 **Response:**
 ```json
 {
   "status": "success",
-  "message": "All data for store reneecosmetics.in has been deleted"
+  "message": "All data for store reneecosmetics.in has been deleted",
+  "delete_count": 1250
 }
 ```
 
 ---
 
 ## 8. Sync Status
-**Endpoint:** `GET /sync/status/{store_id}`  
+**Endpoint:** `GET /v1/sync/status/{store_id}`  
 **Description:** Returns the total count of vectors synced for a specific store.
 
 **Response:**

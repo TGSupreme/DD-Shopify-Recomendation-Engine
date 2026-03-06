@@ -93,7 +93,6 @@ async def sync_products_bulk(request: BatchSyncRequest):
             await upsert_vectors(batch, namespace=request.store_id)
             total_upserted += len(batch)
             logger.info(f"{total_upserted} Vectors successfully upserted to Pinecone")
-            print("hello")
         
         return SyncResponse(
             message=f"Successfully synced {total_upserted} products for store {request.store_id}",  
