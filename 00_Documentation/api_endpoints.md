@@ -5,7 +5,50 @@
 
 ---
 
-## 1. Sync Product (Single)
+## 1. Shopify Unified Webhook
+**Endpoint:** `POST /sync/webhook`  
+**Description:** A single endpoint to handle Shopify's `products/create`, `products/update`, and `products/delete` webhooks. It automatically parses the Shopify-specific payload, generates embeddings, and manages Pinecone vectors.
+
+**Required Headers:**
+- `X-Shopify-Topic`: (e.g., `products/update`)
+- `X-Shopify-Shop-Domain`: (e.g., `store-name.myshopify.com`)
+
+**Request Body (Create/Update Example):**
+```json
+{
+  "id": 123456789,
+  "title": "Example Product",
+  "vendor": "Brand Name",
+  "product_type": "Clothing",
+  "tags": "tag1, tag2",
+  "options": [
+    { "name": "Size", "values": ["S", "M", "L"] }
+  ],
+  "variants": [
+    { "price": "19.99" }
+  ]
+}
+```
+
+**Request Body (Delete Example):**
+```json
+{
+  "id": 123456789
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "action": "upsert",
+  "product_id": "123456789"
+}
+```
+
+---
+
+## 2. Sync Product (Single)
 **Endpoint:** `POST /sync/`  
 **Description:** Upserts a single product into the vector database within a store-specific namespace. Ideal for real-time Shopify webhooks.
 
