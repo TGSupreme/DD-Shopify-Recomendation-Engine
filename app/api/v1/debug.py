@@ -15,7 +15,7 @@ async def log_request(request: Request):
     try:
         body = await request.json()
         logger.info(f"DEBUG: Received POST request: {json.dumps(body)}")
-        return {"status": "success", "received": body}
+        return {"status": "success", "received": request}
     except Exception as e:
         # Fallback if body is not JSON or is empty
         raw_body = await request.body()
