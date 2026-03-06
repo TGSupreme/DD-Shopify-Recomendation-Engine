@@ -1,10 +1,18 @@
 from typing import List
+import logging
 from fastapi import APIRouter, HTTPException
 from app.schemas.product import Product, BatchSyncRequest
 from app.schemas.response import SyncResponse
 from app.utils.formatter import format_product_context
 from app.services.embedding import embed_query, embed_documents
 from app.services.vector_store import upsert_vector, upsert_vectors
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -34,6 +42,7 @@ async def sync_product(product: Product):
         
         return SyncResponse(message=f"Product {product.id} synced successfully for store {product.store_id}", upserted_count=1)
     except Exception as e:
+        logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/bulk", response_model=SyncResponse)
@@ -45,11 +54,11 @@ async def sync_products_bulk(request: BatchSyncRequest):
 
         # 1. Format all product context strings for batch embedding
         content_strings = [format_product_context(p) for p in request.products]
-        print("Product context formatting completed")
+        logger.info("Product context formatting completed")
 
         # 2. Generate embeddings in a single batch call
         vectors = await embed_documents(content_strings)
-        print("Embeddings generated")
+        logger.info("Embeddings generated")
 
         # 3. Prepare list of Pinecone-format vectors with metadata
         vectors_to_upsert = []
@@ -67,7 +76,7 @@ async def sync_products_bulk(request: BatchSyncRequest):
                 "values": vectors[i].tolist(),
                 "metadata": metadata
             } )
-        print("Vectors prepared for Pinecone")
+        logger.info("Vectors prepared for Pinecone")
 
         # 4. Upsert everything to Pinecone Upsert in batches of 100
         batch_size = 100
@@ -77,11 +86,13 @@ async def sync_products_bulk(request: BatchSyncRequest):
             batch = vectors_to_upsert[i:i + batch_size]
             await upsert_vectors(batch, namespace=request.store_id)
             total_upserted += len(batch)
-            print(f"{total_upserted} Vectors successfully upserted to Pinecone")
+            logger.info(f"{total_upserted} Vectors successfully upserted to Pinecone")
+            print("hello")
         
         return SyncResponse(
             message=f"Successfully synced {total_upserted} products for store {request.store_id}",  
             upserted_count=total_upserted
         )
     except Exception as e:
+        logger.error(str(e))
         raise HTTPException(status_code=500, detail=str(e))

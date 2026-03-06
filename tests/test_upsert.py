@@ -5,6 +5,15 @@ from app.services.vector_store import upsert_vector
 from app.utils.formatter import format_product_context
 from dotenv import load_dotenv
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 async def test_upsert():
     load_dotenv()
     
@@ -75,7 +84,7 @@ async def test_upsert():
             # Upsert to Pinecone
             print(f"Upserting to Pinecone...")
             await upsert_vector(product.id, vector, metadata, namespace=product.store_id)
-            print(f"Successfully upserted product: {product.id} to store {product.store_id}")
+            logger.info(f"Successfully upserted product: {product.id} to store {product.store_id}")
             
         except Exception as e:
             print(f"Error upserting product {product.id}: {e}")
