@@ -1,6 +1,6 @@
 from typing import List
 import logging
-from fastapi import APIRouter, HTTPException,Query
+from fastapi import APIRouter, HTTPException, Query
 from app.schemas.product import Product, BatchSyncRequest
 from app.schemas.response import SyncResponse, DeleteResponse
 from app.utils.formatter import format_product_context
