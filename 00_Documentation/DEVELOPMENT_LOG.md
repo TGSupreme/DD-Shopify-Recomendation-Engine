@@ -29,6 +29,8 @@ A high-performance, stateless recommendation service built with FastAPI, Pinecon
 
 ### 4. API Logic Integration
 - [x] Connected `POST /v1/sync` to the embedding and vector store services.
+- [x] **New: Unified Shopify Webhook:** Implemented `POST /v1/sync/webhook` to handle `products/create`, `products/update`, and `products/delete` in a single endpoint.
+- [x] **New: Debug API:** Created `POST /debug` to log and inspect incoming Shopify webhook payloads.
 - [x] Connected `POST /v1/recommend/user` to the `UserRecommender`.
 - [x] Connected `POST /v1/recommend/similar` to the `ItemRecommender`.
 - [x] Connected `POST /v1/search` to the embedding and vector store services.

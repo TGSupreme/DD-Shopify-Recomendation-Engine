@@ -24,3 +24,6 @@ class SearchRequest(BaseModel):
 class BatchSyncRequest(BaseModel):
     store_id: str
     products: List[Product]
+
+class ProductFetchRequest(BaseModel):
+    product_ids: List[str]

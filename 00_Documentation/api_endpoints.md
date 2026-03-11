@@ -254,3 +254,34 @@
   "status": "success"
 }
 ```
+
+---
+
+## 9. Fetch Products (MongoDB)
+**Endpoint:** `POST /products/fetch`  
+**Description:** Fetches product details directly from MongoDB by providing a list of product IDs. Excludes the internal `_id` field from the response.
+
+**Request Body:**
+```json
+{
+  "product_ids": ["789123456", "123456789"]
+}
+```
+
+**Response:**
+```json
+[
+  {
+    "id": "789123456",
+    "store_id": "reneecosmetics.in",
+    "title": "Example Product",
+    "vendor": "Brand Name",
+    "product_type": "Clothing",
+    "tags": ["tag1", "tag2"],
+    "options": [
+      { "name": "Size", "values": ["S", "M", "L"] }
+    ],
+    "price": 19.99
+  }
+]
+```

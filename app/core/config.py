@@ -9,6 +9,11 @@ class Settings(BaseSettings):
     PINECONE_API_KEY: Optional[str] = None
     PINECONE_INDEX_NAME: Optional[str] = None
     
+    # MongoDB Configuration
+    MONGODB_URI: Optional[str] = None
+    MONGODB_DB_NAME: str = "shopify_recommendations"
+    MONGODB_COLLECTION: str = "products"
+
     # Embedding Configuration
     EMBEDDING_PROVIDER: str = "openai" # "openai", "gemini", or "jina"
     
